@@ -1,0 +1,26 @@
+{{- if and .Values.persistence.sasl.enabled (not .Values.persistence.sasl.existingClaim) -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "postfix.fullname" . }}-sasl
+  annotations:
+  {{- with .Values.persistence.sasl.annotations  }}
+  {{ toYaml . | nindent 4 }}
+  {{- end }}
+    helm.sh/resource-policy: keep
+  labels:
+    {{- include "postfix.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.sasl.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.sasl.size | quote }}
+  {{- if .Values.persistence.sasl.storageClass }}
+  storageClassName: {{ .Values.persistence.sasl.storageClass | quote }}
+  {{- end }}
+  {{- if .Values.persistence.sasl.volumeName }}
+  volumeName: {{ .Values.persistence.sasl.volumeName | quote }}
+  {{- end }}
+{{- end -}}
+

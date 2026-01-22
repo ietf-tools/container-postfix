@@ -1,0 +1,15 @@
+{{- if .Values.metrics.serviceMonitor.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "postfix.fullname" . }}-metrics
+  labels:
+    {{- include "postfix.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9154
+      name: metrics
+  selector:
+    {{- include "postfix.selectorLabels" . | nindent 4 }}
+{{- end }}

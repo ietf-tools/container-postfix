@@ -1,0 +1,26 @@
+{{- if and .Values.persistence.queue.enabled (not .Values.persistence.queue.existingClaim) -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "postfix.fullname" . }}-queue
+  annotations:
+  {{- with .Values.persistence.queue.annotations  }}
+  {{ toYaml . | nindent 4 }}
+  {{- end }}
+    helm.sh/resource-policy: keep
+  labels:
+    {{- include "postfix.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.queue.accessMode | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.queue.size | quote }}
+  {{- if .Values.persistence.queue.storageClass }}
+  storageClassName: {{ .Values.persistence.queue.storageClass | quote }}
+  {{- end }}
+  {{- if .Values.persistence.queue.volumeName }}
+  volumeName: {{ .Values.persistence.queue.volumeName | quote }}
+  {{- end }}
+{{- end -}}
+

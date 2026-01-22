@@ -1,0 +1,235 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "postfix.fullname" . }}
+  labels:
+    {{- include "postfix.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "postfix.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "postfix.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "postfix.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: smtp
+              containerPort: 25
+              protocol: TCP
+            - name: smtps
+              containerPort: 465
+              protocol: TCP
+            - name: submission
+              containerPort: 587
+              protocol: TCP
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - postfix
+                - status
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+          {{- end }}
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: 25
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: postfix-init
+              mountPath: /etc/service/postfix/run.initialization
+              subPath: run.initialization
+            - name: {{ include "postfix.fullname" . }}-logs
+              mountPath: /var/log/postfix
+            - name: {{ include "postfix.fullname" . }}-queue
+              mountPath: /var/spool/postfix
+          {{- if .Values.postfix.helo_checks }}
+            - name: postfix-init
+              mountPath: /etc/postfix/helo_checks
+              subPath: helo_checks
+          {{- end }}
+          {{- if .Values.postfix.header_checks }}
+            - name: postfix-init
+              mountPath: /etc/postfix/header_checks
+              subPath: header_checks
+          {{- end }}
+          {{- if .Values.postfix.body_checks }}
+            - name: postfix-init
+              mountPath: /etc/postfix/body_checks
+              subPath: body_checks
+          {{- end }}
+          {{- if .Values.postfix.envelope_sender_checks }}
+            - name: postfix-init
+              mountPath: /etc/postfix/envelope_sender_checks
+              subPath: envelope_sender_checks
+          {{- end }}
+          {{- if .Values.postfix.tlsEnabled }}
+            - name: {{ .Values.postfix.tlsExistingSecretName }}
+              mountPath: /etc/tls
+              readOnly: true
+          {{- end }}
+          {{- if .Values.postfix.restriction_class_maps }}
+            {{- range $pfmap := .Values.postfix.restriction_class_maps }}
+            - name: {{ .existingSecretName }}
+              subPath: {{ .existingSecretKey }}
+              mountPath: /etc/postfix/{{ .existingSecretKey }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.persistence.sasl.enabled }}
+            - name: {{ include "postfix.fullname" . }}-sasl
+              mountPath: /etc/sasl2
+          {{- end }}
+          {{- if .Values.postfix.restricted_sender_maps }}
+            {{- range $pfmap := .Values.postfix.restricted_sender_maps }}
+            - name: {{ .existingSecretName }}
+              subPath: {{ .existingSecretKey }}
+              mountPath: /etc/postfix/{{ .existingSecretKey }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.postfix.transport_maps }}
+            {{- range $pfmap := .Values.postfix.transport_maps }}
+            - name: {{ .existingSecretName }}
+              subPath: {{ .existingSecretKey }}
+              mountPath: /etc/postfix/{{ .existingSecretKey }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.postfix.relay_domains }}
+            {{- range $pfmap := .Values.postfix.relay_domains }}
+            - name: {{ .existingSecretName }}
+              subPath: {{ .existingSecretKey }}
+              mountPath: /etc/postfix/{{ .existingSecretKey }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.postfix.relay_recipient_maps }}
+            {{- range $pfmap := .Values.postfix.relay_recipient_maps }}
+            - name: {{ .existingSecretName }}
+              subPath: {{ .existingSecretKey }}
+              mountPath: /etc/postfix/{{ .existingSecretKey }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.postfix.virtual_alias_maps }}
+            {{- range $pfmap := .Values.postfix.virtual_alias_maps }}
+            - name: {{ .existingSecretName }}
+              subPath: {{ .existingSecretKey }}
+              mountPath: /etc/postfix/{{ .existingSecretKey }}
+          {{- end }}
+          {{- end }}
+        - name: exporter
+          image: ghcr.io/hsn723/postfix_exporter
+          imagePullPolicy: IfNotPresent
+          args:
+          - --postfix.showq_path
+          - /var/spool/postfix/public/showq
+          - --postfix.logfile_path
+          - /var/log/postfix/current
+          volumeMounts:
+            - name: {{ include "postfix.fullname" . }}-queue
+              mountPath: /var/spool/postfix
+            - name: {{ include "postfix.fullname" . }}-logs
+              mountPath: /var/log/postfix
+
+      volumes:
+        {{- $mounts := list }}
+        - name: postfix-init
+          configMap:
+            name: postfix-init
+            defaultMode: 0777
+        - name: {{ include "postfix.fullname" . }}-logs
+          emptyDir: {}
+        - name: {{ include "postfix.fullname" . }}-queue
+        {{- if .Values.persistence.queue.enabled }}
+          persistentVolumeClaim:
+            {{- if .Values.persistence.queue.existingClaim }}
+            claimName: {{ .Values.persistence.queue.existingClaim }}
+            {{- else }}
+            claimName: {{ include "postfix.fullname" . }}-queue
+            {{- end }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
+        - name: {{ include "postfix.fullname" . }}-sasl
+        {{- if .Values.persistence.sasl.enabled }}
+          persistentVolumeClaim:
+            {{- if .Values.persistence.sasl.existingClaim }}
+            claimName: {{ .Values.persistence.sasl.existingClaim }}
+            {{- else }}
+            claimName: {{ include "postfix.fullname" . }}-sasl
+            {{- end }}
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
+        {{- if .Values.postfix.tlsEnabled }}
+        - name: {{ .Values.postfix.tlsExistingSecretName }}
+          secret:
+            secretName: {{ .Values.postfix.tlsExistingSecretName }}
+        {{- end }}
+        {{- $new := dict }}
+        {{- $allMaps := merge $new
+        (.Values.postfix.restricted_sender_maps | default dict)
+        (.Values.postfix.restriction_class_maps | default dict)
+        (.Values.postfix.transport_maps | default dict)
+        (.Values.postfix.relay_domains | default dict)
+        (.Values.postfix.relay_recipient_maps | default dict)
+        (.Values.postfix.virtual_alias_maps | default dict) }}
+        {{- $newList := list }}
+        {{- $newer := list }}
+        {{- range $allMaps }}
+        {{- $newList = mustAppend $newList .existingSecretName }}
+        {{- end }}
+        {{- range $secretName := $newList | uniq }}
+        - name: {{ $secretName }}
+          secret:
+            secretName: {{ $secretName }}
+        {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

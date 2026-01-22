@@ -1,0 +1,57 @@
+#!/bin/bash -e
+
+trap 'echo "ERROR: $BASH_SOURCE:$LINENO $BASH_COMMAND" >&2' ERR
+
+postconf -e maillog_file=/dev/stdout
+
+if [ "$MAILNAME" ]; then
+  echo "$MAILNAME" > /etc/mailname
+  postconf -e myhostname="$MAILNAME"
+fi
+
+if [ "$MY_NETWORKS" ]; then
+  postconf -e mynetworks="$MY_NETWORKS"
+fi
+
+if [ "$MY_DESTINATION" ]; then
+  postconf -e mydestination="$MY_DESTINATION"
+fi
+
+if [ "$ROOT_ALIAS" ]; then
+  sed -i '/^root:/d' /etc/aliases
+  echo "root: $ROOT_ALIAS" >> /etc/aliases
+  newaliases
+fi
+
+# Do we want to modify the config with the script?
+[ -f /etc/service/postfix/run.config ] && source /etc/service/postfix/run.config
+
+# We have to start and stop postfix first through init.d to populate
+# postfix spool directory for chroot in which postfix is running.
+# We do it a bit differently in alpine as the init.d scripts use
+# openrc-run which is not supported by alpine very well, as the
+# use of init systems is discouraged in general.
+if [ -f /etc/alpine-release ]; then
+  if ! output=$(/usr/sbin/postfix -c /etc/postfix start 2>&1); then
+    echo "init start failed" >&2
+    echo "$output" >&2
+    exit 1
+  fi
+  # We ignore the exit code because abort sometimes tries to kill a process which
+  # does not exit anymore and thus return a non-zero exit code.
+  /usr/sbin/postfix -c /etc/postfix abort >/dev/null 2>&1 || true
+else
+  if ! output=$(/etc/init.d/postfix start 2>&1); then
+    echo "init start failed" >&2
+    echo "$output" >&2
+    exit 1
+  fi
+  # We ignore the exit code because abort sometimes tries to kill a process which
+  # does not exit anymore and thus return a non-zero exit code.
+  /etc/init.d/postfix abort >/dev/null 2>&1 || true
+fi
+
+# Is there any other script to run here?
+[ -f /etc/service/postfix/run.initialization ] && source /etc/service/postfix/run.initialization
+
+exec "$POSTFIX_PATH" -c /etc/postfix -s

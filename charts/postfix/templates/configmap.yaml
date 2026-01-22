@@ -1,0 +1,144 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postfix-init
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "postfix.labels" . | nindent 4 }}
+data:
+  {{- if .Values.postfix.helo_checks }}
+  helo_checks: |
+    {{- range $check := .Values.postfix.helo_checks }}
+      {{ $check.name }} {{ $check.action }}
+    {{- end }}
+  {{- end }}
+  {{- if .Values.postfix.header_checks }}
+  header_checks: |
+    {{- range $check := .Values.postfix.header_checks }}
+      {{ $check.name }} {{ $check.action }}
+    {{- end }}
+  {{- end }}
+  {{- if .Values.postfix.body_checks }}
+  body_checks: |
+    {{- range $check := .Values.postfix.body_checks }}
+      {{ $check.name }} {{ $check.allow }}
+    {{- end }}
+  {{- end }}
+  {{- if .Values.postfix.envelope_sender_checks }}
+  envelope_sender_checks: |
+    {{- range $check := .Values.postfix.envelope_sender_checks }}
+      {{ $check.name }} {{ $check.allow }}
+    {{- end }}
+  {{- end }}
+  run.initialization: |
+    postconf "myhostname = {{ .Values.postfix.hostname }}"
+    postconf "mynetworks = {{ .Values.postfix.mynetworks | join " " }}"
+    postconf "recipient_delimiter = +"
+    postconf "owner_request_special = no"
+    postconf "smtpd_sasl_auth_enable = yes"
+    {{- if .Values.postfix.tlsEnabled }}
+    postconf "smtpd_tls_auth_only = yes"
+    {{- end }}
+
+    {{- if .Values.postfix.helo_checks }}
+    # HELO checks
+    postconf "smtpd_helo_required = yes"
+    postconf "smtpd_helo_restrictions = permit_mynetworks, check_helo_access lmdb:/etc/postfix/helo_checks, permit"
+    postmap /etc/postfix/helo_checks
+    {{- end }}
+
+    {{- if .Values.postfix.header_checks }}
+    # Header checks
+    postconf "header_checks = regexp:/etc/postfix/header_checks"
+    {{- end }}
+
+    {{- if .Values.postfix.body_checks }}
+    # Body checks
+    postconf "body_checks = regexp:/etc/postfix/body_checks"
+    {{- end }}
+
+    {{- if .Values.postfix.envelope_sender_checks }}
+    # Envelope sender checks
+    postmap /etc/postfix/envelope_sender_checks
+    postconf "smtpd_sender_login_maps = lmdb:/etc/postfix/envelope_sender_checks"
+    {{- end }}
+
+    {{- if .Values.postfix.tlsEnabled }}
+    # TLS config
+    postconf "smtpd_tls_security_level = may"
+    postconf "smtpd_tls_cert_file = /etc/tls/tls.crt"
+    postconf "smtpd_tls_key_file = /etc/tls/tls.key"
+    {{- end }}
+
+    # MILTER config
+    postconf "milter_default_action = accept"
+    postconf "milter_connect_timeout = 30s"
+    postconf "milter_command_timeout = 30s"
+    postconf "milter_content_timeout = 300s"
+    postconf "milter_protocol = 6"
+    {{- if .Values.postfix.milters_active }}
+    postconf "smtpd_milters = {{ .Values.postfix.smtpd_milters | join "," }}"
+    postconf "non_smtpd_milters = {{ .Values.postfix.non_smtpd_milters | join "," }}"
+    {{- if .Values.postfix.other_milter_config }}
+    {{- range .Values.postfix.other_milter_config }}
+    {{ . }}
+    {{- end }}
+    {{- end }}
+    {{- end }}
+
+    {{ if .Values.postfix.relay_host }}
+    # Relay config
+    postconf "relayhost = {{ .Values.postfix.relay_host }}"
+    {{- end }}
+
+    {{ if .Values.postfix.transport_maps }}
+    postconf "transport_maps = {{ keys .Values.postfix.transport_maps | join ", " }}"
+    {{- end }}
+
+    {{ if .Values.postfix.relay_domains }}
+    postconf "relay_domains = {{ keys .Values.postfix.relay_domains | join ", " }}"
+    {{- end }}
+
+    # SMTP Sender config
+    # You still need some manual config, applied via the $extra_config parameter
+    #
+    postconf "smtpd_restriction_classes = {{ .Values.postfix.smtpd_restriction_classes | join " " }}"
+
+    {{ if .Values.postfix.restricted_sender_maps }}
+    postconf "smtpd_sender_restrictions = check_sender_access {{ keys .Values.postfix.restricted_sender_maps | join ", "}}"
+    {{- end }}
+
+    # SMTP recipients
+    {{ if .Values.postfix.relay_recipient_maps }}
+    postconf "relay_recipient_maps = {{ keys .Values.postfix.relay_recipient_maps | join ", "}}"
+    {{- end }}
+
+    {{ if .Values.postfix.virtual_alias_maps }}
+    postconf "virtual_alias_maps = {{ keys .Values.postfix.virtual_alias_maps | join ", "}}"
+    {{- end }}
+
+    postconf "smtpd_recipient_restrictions = {{ .Values.postfix.smtpd_recipient_restrictions | join " " }}"
+    postconf "smtpd_relay_restrictions = {{ .Values.postfix.smtpd_relay_restrictions | join " " }}"
+
+    # SMTP limits
+    {{- if .Values.postfix.smtpd_client_message_rate_limit }}
+    postconf "smtpd_client_message_rate_limit = {{ .Values.postfix.smtpd_client_message_rate_limit }}"
+    {{- end }}
+    {{- if .Values.postfix.smtpd_client_recipient_rate_limit }}
+    postconf "smtpd_client_recipient_rate_limit = {{ .Values.postfix.smtpd_client_recipient_rate_limit }}"
+    {{- end }}
+    {{- if .Values.postfix.message_size_limit }}
+    postconf "message_size_limit = {{ int64 .Values.postfix.message_size_limit }}"
+    {{- end }}
+    {{- if .Values.postfix.smtpd_recipient_limit }}
+    postconf "smtpd_recipient_limit = {{ .Values.postfix.smtpd_recipient_limit }}"
+    {{- end }}
+    {{- if .Values.postfix.smtpd_recipient_overshoot_limit }}
+    postconf "smtpd_recipient_overshoot_limit = {{ .Values.postfix.smtpd_recipient_overshoot_limit }}"
+    {{- end }}
+
+    {{ if .Values.postfix.extra_config }}
+    {{- range .Values.postfix.extra_config }}
+    {{ . }}
+    {{- end }}
+    {{- end }}
