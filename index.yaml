@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   postfix:
   - apiVersion: v2
+    appVersion: 1.0.4
+    created: "2026-02-10T23:31:40.33517391Z"
+    description: IETF postfix deployment for kubernetes
+    digest: 2be57ecb3eb019ecbb01f68304f38e54aff936026e829cb5b5a5d523dc5cc059
+    name: postfix
+    type: application
+    urls:
+    - https://github.com/ietf-tools/container-postfix/releases/download/postfix-1.0.4/postfix-1.0.4.tgz
+    version: 1.0.4
+  - apiVersion: v2
     appVersion: 1.0.3
     created: "2026-02-05T06:36:48.424168682Z"
     description: IETF postfix deployment for kubernetes
@@ -31,4 +41,4 @@ entries:
     urls:
     - https://github.com/ietf-tools/container-postfix/releases/download/postfix-1.0.1/postfix-1.0.1.tgz
     version: 1.0.1
-generated: "2026-02-05T06:36:48.424179813Z"
+generated: "2026-02-10T23:31:40.335189198Z"
