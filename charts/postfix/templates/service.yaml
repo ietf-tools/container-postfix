@@ -21,6 +21,12 @@ spec:
     - port: 587
       name: smtps
     - port: 10026
-      name: smtpss
+      name: ingress-mm
+    - port: 10027
+      name: ingress-dt
+    - port: 10028
+      name: ingress-ns
+    - port: 10029
+      name: ingress-nl
   selector:
     {{- include "postfix.selectorLabels" . | nindent 4 }}
