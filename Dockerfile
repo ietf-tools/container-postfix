@@ -30,7 +30,7 @@ RUN postconf -e mydestination="localhost.localdomain, localhost" && \
 ENV POSTFIX_PATH="/usr/libexec/postfix/master"
 
 COPY ./etc/postfix/sasl/smtpd.conf /etc/postfix/sasl
-COPY ./etc/aliases /etc/aliases
+COPY ./etc/postfix/aliases /etc/postfix/aliases
 COPY ./etc/service/postfix /etc/service/postfix
 COPY ./etc/service/saslauthd /etc/service/saslauthd
 COPY ./etc/service/syslog-ng /etc/service/syslog-ng

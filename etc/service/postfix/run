@@ -18,10 +18,12 @@ if [ "$MY_DESTINATION" ]; then
 fi
 
 if [ "$ROOT_ALIAS" ]; then
-  sed -i '/^root:/d' /etc/aliases
-  echo "root: $ROOT_ALIAS" >> /etc/aliases
-  newaliases
+  sed -i '/^root:/d' /etc/postfix/aliases
+  echo "root: $ROOT_ALIAS" >> /etc/postfix/aliases
 fi
+
+# Update aliases
+newaliases
 
 # Do we want to modify the config with the script?
 [ -f /etc/service/postfix/run.config ] && source /etc/service/postfix/run.config
