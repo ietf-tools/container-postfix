@@ -160,6 +160,11 @@ spec:
               mountPath: /etc/postfix/{{ .existingSecretKey }}
           {{- end }}
           {{- end }}
+          {{- if .Values.postfix.smtp_client_auth.enabled }}
+            - name: postfix-smtp-password
+              subPath: {{ .Values.postfix.smtp_client_auth.existingSecretKey }}
+              mountPath: /etc/postfix/{{ .Values.postfix.smtp_client_auth.existingSecretKey }}
+          {{- end }}
         - name: exporter
           image: ghcr.io/hsn723/postfix_exporter
           imagePullPolicy: IfNotPresent
@@ -175,6 +180,11 @@ spec:
               mountPath: /var/log/postfix
 
       volumes:
+        {{- if .Values.postfix.smtp_client_auth.enabled }}
+        - name: postfix-smtp-password
+          secret:
+            secretName: {{ .Values.postfix.smtp_client_auth.existingSecretName }}
+        {{- end }}
         {{- $mounts := list }}
         - name: postfix-init
           configMap:
