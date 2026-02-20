@@ -36,3 +36,4 @@ COPY ./etc/service/saslauthd /etc/service/saslauthd
 COPY ./etc/service/syslog-ng /etc/service/syslog-ng
 COPY ./usr/local/bin /usr/local/bin
 COPY ./etc/syslog-ng/syslog-ng.conf /etc/syslog-ng/syslog-ng.conf
+COPY ./usr/libexec/postfix/postfix-script /usr/libexec/postfix/postfix-script
