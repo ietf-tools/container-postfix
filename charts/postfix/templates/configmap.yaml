@@ -37,6 +37,8 @@ data:
     postconf "owner_request_special = no"
     # SMTP client settings
     {{- if .Values.postfix.smtp_client_auth.enabled }}
+    postconf "smtp_sasl_auth_enable = yes"
+    postconf "smtp_sasl_security_options ="
     postmap lmdb:/etc/postfix/{{ .Values.postfix.smtp_client_auth.existingSecretKey }}
     postconf "smtp_sasl_password_maps = lmdb:/etc/postfix/{{ .Values.postfix.smtp_client_auth.existingSecretKey }}"
       {{- if .Values.postfix.smtp_client_auth.encrypted }}
