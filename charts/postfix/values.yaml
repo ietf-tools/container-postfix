@@ -1,3 +1,10 @@
+smtp_password:
+  create: false
+  name: smtp_password
+  data:
+    smtp_password: |
+      smart_relay.example.com  my_username:mypassword
+
 pgsql_restriction_classes:
   create: false
   name: pgsql_restriction_classes
@@ -114,11 +121,17 @@ mx_tls:
 postfix:
   hostname: mx.mydomain.com
   postscreenEnabled: true
+  smtp_client_auth:
+    enabled: false
+    encrypted: true
+    existingSecretName: smtp-password
+    existingSecretKey: smtp-password
   smtpd_client_message_rate_limit: 0
   smtpd_client_recipient_rate_limit: 0
   message_size_limit: 0
   smtpd_recipient_limit: 0
   smtpd_recipient_overshoot_limit: 0
+
   mynetworks:
     - 127.0.0.0/8
     - 10.0.0.0/8

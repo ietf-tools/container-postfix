@@ -35,6 +35,16 @@ data:
     postconf "mynetworks = {{ .Values.postfix.mynetworks | join " " }}"
     postconf "recipient_delimiter = +"
     postconf "owner_request_special = no"
+    # SMTP client settings
+    {{- if .Values.postfix.smtp_client_auth.enabled }}
+    postmap lmdb:/etc/postfix/{{ .Values.postfix.smtp_client_auth.existingSecretKey }}
+    postconf "smtp_sasl_password_maps = lmdb:/etc/postfix/{{ .Values.postfix.smtp_client_auth.existingSecretKey }}"
+      {{- if .Values.postfix.smtp_client_auth.encrypted }}
+    postconf "smtp_tls_security_level = encrypt"
+      {{- end }}
+
+    {{- end }}
+
     postconf "smtpd_sasl_auth_enable = yes"
     {{- if .Values.postfix.tlsEnabled }}
     postconf "smtpd_tls_auth_only = yes"
