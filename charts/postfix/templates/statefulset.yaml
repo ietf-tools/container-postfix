@@ -1,0 +1,225 @@
+{{- if eq .Values.postfix.deploymentType "statefulSet" }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "postfix.fullname" . }}
+  labels:
+    {{- include "postfix.labels" . | nindent 4 }}
+spec:
+  serviceName: postfix-internal
+  replicas: {{ .Values.statefulSet.replicas }}
+  selector:
+    matchLabels:
+      {{- include "postfix.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "postfix.labels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+          - name: smtp
+            containerPort: 25
+            protocol: TCP
+          - name: smtps
+            containerPort: 465
+            protocol: TCP
+          - name: submission
+            containerPort: 587
+            protocol: TCP
+        {{- if .Values.probes.liveness.enabled }}
+        livenessProbe:
+          exec:
+            command:
+              - postfix
+              - health
+          initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+          failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+        {{- end }}
+        {{- if .Values.probes.readiness.enabled }}
+        readinessProbe:
+          exec:
+            command:
+              - postfix
+              - health
+          initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+          failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+        {{- end }}
+        {{- with .Values.resources }}
+        resources:
+          {{- toYaml . | nindent 12 }}
+        {{- end }}
+
+        volumeMounts:
+        - name: postfix-init
+          mountPath: /etc/service/postfix/run.initialization
+          subPath: run.initialization
+      {{- if .Values.postfix.helo_checks }}
+        - name: postfix-init
+          mountPath: /etc/postfix/helo_checks
+          subPath: helo_checks
+      {{- end }}
+      {{- if .Values.postfix.header_checks }}
+        - name: postfix-init
+          mountPath: /etc/postfix/header_checks
+          subPath: header_checks
+      {{- end }}
+      {{- if .Values.postfix.body_checks }}
+        - name: postfix-init
+          mountPath: /etc/postfix/body_checks
+          subPath: body_checks
+      {{- end }}
+      {{- if .Values.postfix.envelope_sender_checks }}
+        - name: postfix-init
+          mountPath: /etc/postfix/envelope_sender_checks
+          subPath: envelope_sender_checks
+      {{- end }}
+      {{- if .Values.postfix.tlsEnabled }}
+        - name: {{ .Values.postfix.tlsExistingSecretName }}
+          mountPath: /etc/tls
+          readOnly: true
+      {{- end }}
+      {{- if .Values.postfix.restriction_class_maps }}
+        {{- range $pfmap := .Values.postfix.restriction_class_maps }}
+        - name: {{ .existingSecretName }}
+          subPath: {{ .existingSecretKey }}
+          mountPath: /etc/postfix/{{ .existingSecretKey }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.postfix.restricted_sender_maps }}
+        {{- range $pfmap := .Values.postfix.restricted_sender_maps }}
+        - name: {{ .existingSecretName }}
+          subPath: {{ .existingSecretKey }}
+          mountPath: /etc/postfix/{{ .existingSecretKey }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.postfix.transport_maps }}
+        {{- range $pfmap := .Values.postfix.transport_maps }}
+        - name: {{ .existingSecretName }}
+          subPath: {{ .existingSecretKey }}
+          mountPath: /etc/postfix/{{ .existingSecretKey }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.postfix.relay_domains }}
+        {{- range $pfmap := .Values.postfix.relay_domains }}
+        - name: {{ .existingSecretName }}
+          subPath: {{ .existingSecretKey }}
+          mountPath: /etc/postfix/{{ .existingSecretKey }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.postfix.relay_recipient_maps }}
+        {{- range $pfmap := .Values.postfix.relay_recipient_maps }}
+        - name: {{ .existingSecretName }}
+          subPath: {{ .existingSecretKey }}
+          mountPath: /etc/postfix/{{ .existingSecretKey }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.postfix.virtual_alias_maps }}
+        {{- range $pfmap := .Values.postfix.virtual_alias_maps }}
+        - name: {{ .existingSecretName }}
+          subPath: {{ .existingSecretKey }}
+          mountPath: /etc/postfix/{{ .existingSecretKey }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.postfix.sasl_pgsql.enabled }}
+        - name: sasl-pgsql
+          subPath: {{ .Values.postfix.sasl_pgsql.existingSecretKey }}
+          mountPath: /etc/postfix/sasl/{{ .Values.postfix.sasl_pgsql.existingSecretKey }}
+      {{- end }}
+      {{- if .Values.postfix.smtp_client_auth.enabled }}
+        - name: postfix-smtp-password
+          subPath: {{ .Values.postfix.smtp_client_auth.existingSecretKey }}
+          mountPath: /etc/postfix/{{ .Values.postfix.smtp_client_auth.existingSecretKey }}
+      {{- end }}
+        - name: logs
+          mountPath: /var/log/postfix
+        - name: queue
+          mountPath: /var/spool/postfix
+      - name: exporter
+        image: ghcr.io/hsn723/postfix_exporter
+        imagePullPolicy: IfNotPresent
+        restartPolicy: Always
+        args:
+          - --postfix.showq_path
+          - /var/spool/postfix/public/showq
+          - --postfix.logfile_path
+          - /var/log/postfix/current
+        volumeMounts:
+          - name: queue
+            mountPath: /var/spool/postfix
+          - name: logs
+            mountPath: /var/log/postfix
+
+
+      volumes:
+        {{- if not .Values.persistence.queue.enabled }}
+        - name: queue
+          emptyDir: {}
+        {{- end }}
+        - name: logs
+          emptyDir: {}
+        {{- if .Values.postfix.sasl_pgsql.enabled }}
+        - name: sasl-pgsql
+          secret:
+            secretName: {{ .Values.postfix.sasl_pgsql.existingSecretName }}
+        {{- end }}
+        {{- if .Values.postfix.smtp_client_auth.enabled }}
+        - name: postfix-smtp-password
+          secret:
+            secretName: {{ .Values.postfix.smtp_client_auth.existingSecretName }}
+        {{- end }}
+        {{- if .Values.postfix.sasl_pgsql.enabled }}
+        - name: postfix-sasl-pgsql
+          secret:
+            secretName: {{ .Values.postfix.sasl_pgsql.existingSecretName }}
+        {{- end }}
+        {{- $mounts := list }}
+        - name: postfix-init
+          configMap:
+            name: postfix-init
+            defaultMode: 0777
+        {{- if .Values.postfix.tlsEnabled }}
+        - name: {{ .Values.postfix.tlsExistingSecretName }}
+          secret:
+            secretName: {{ .Values.postfix.tlsExistingSecretName }}
+        {{- end }}
+        {{- $new := dict }}
+        {{- $allMaps := merge $new
+        (.Values.postfix.restricted_sender_maps | default dict)
+        (.Values.postfix.restriction_class_maps | default dict)
+        (.Values.postfix.transport_maps | default dict)
+        (.Values.postfix.relay_domains | default dict)
+        (.Values.postfix.relay_recipient_maps | default dict)
+        (.Values.postfix.virtual_alias_maps | default dict) }}
+        {{- $newList := list }}
+        {{- $newer := list }}
+        {{- range $allMaps }}
+        {{- $newList = mustAppend $newList .existingSecretName }}
+        {{- end }}
+        {{- range $secretName := $newList | uniq }}
+        - name: {{ $secretName }}
+          secret:
+            secretName: {{ $secretName }}
+        {{- end }}
+  volumeClaimTemplates:
+    {{- if .Values.persistence.queue.enabled }}
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: queue
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: {{ .Values.persistence.queue.size }}
+    {{- end }}
+{{- end }}
