@@ -12,6 +12,7 @@ ENV MY_DESTINATION="localhost.localdomain, localhost"
 ENV ROOT_ALIAS="admin@example.com"
 ENV LOG_TO_STDOUT=0
 
+COPY ./libs /tmp/libs
 
 RUN apk add --no-cache postfix postfix-pgsql postfix-pcre cyrus-sasl syslog-ng
 
@@ -24,7 +25,9 @@ RUN postconf -e mydestination="localhost.localdomain, localhost" && \
   postconf -e "cyrus_sasl_config_path = /etc/postfix/sasl" && \
   mkdir /etc/postfix/sasl && \
   mkdir /var/spool/filter && \
-  chown nobody /var/spool/filter
+  chown nobody /var/spool/filter && \
+  apk add --allow-untrusted /tmp/libs/$(uname -m)/cyrus-sasl-sql-2.1.28-r9.apk && \
+  rm -rf /tmp/libs
 
 
 ENV POSTFIX_PATH="/usr/libexec/postfix/master"
