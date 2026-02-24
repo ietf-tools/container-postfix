@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "postfix.fullname" . }}-internal
+  labels:
+    {{- include "postfix.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - port: 25
+      name: smtp
+    - port: 465
+      name: smtpssl
+    - port: 587
+      name: smtps
+    - port: 10026
+      name: ingress-mm
+    - port: 10027
+      name: ingress-dt
+    - port: 10028
+      name: ingress-ns
+    - port: 10029
+      name: ingress-nl
+  selector:
+    {{- include "postfix.selectorLabels" . | nindent 4 }}
