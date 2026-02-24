@@ -176,11 +176,6 @@ spec:
           secret:
             secretName: {{ .Values.postfix.smtp_client_auth.existingSecretName }}
         {{- end }}
-        {{- if .Values.postfix.sasl_pgsql.enabled }}
-        - name: postfix-sasl-pgsql
-          secret:
-            secretName: {{ .Values.postfix.sasl_pgsql.existingSecretName }}
-        {{- end }}
         {{- $mounts := list }}
         - name: postfix-init
           configMap:
@@ -209,6 +204,18 @@ spec:
           secret:
             secretName: {{ $secretName }}
         {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
   volumeClaimTemplates:
     {{- if .Values.persistence.queue.enabled }}
     - apiVersion: v1
