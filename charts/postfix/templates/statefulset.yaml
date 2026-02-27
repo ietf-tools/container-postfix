@@ -146,7 +146,6 @@ spec:
       - name: exporter
         image: ghcr.io/hsn723/postfix_exporter
         imagePullPolicy: IfNotPresent
-        restartPolicy: Always
         args:
           - --postfix.showq_path
           - /var/spool/postfix/public/showq
