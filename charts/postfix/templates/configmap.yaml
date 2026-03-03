@@ -127,6 +127,9 @@ data:
 
     {{ if .Values.postfix.virtual_alias_maps }}
     postconf "virtual_alias_maps = {{ keys .Values.postfix.virtual_alias_maps | join ", "}}"
+    postconf "canonical_classes = header_recipient"
+    postconf "canonical_maps = {{ keys .Values.postfix.virtual_alias_maps | join ", "}}"
+    postconf "local_header_rewrite_clients = static:all"
     {{- end }}
 
     postconf "smtpd_recipient_restrictions = {{ .Values.postfix.smtpd_recipient_restrictions | join " " }}"
