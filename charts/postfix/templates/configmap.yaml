@@ -31,6 +31,8 @@ data:
     {{- end }}
   {{- end }}
   run.initialization: |
+    # enable showq over tcp for the exporter
+    postconf -M '127.0.0.1:10025/inet=127.0.0.1:10025 inet n - - - - showq'
     postconf "myhostname = {{ .Values.postfix.hostname }}"
     postconf "mynetworks = {{ .Values.postfix.mynetworks | join " " }}"
     postconf "recipient_delimiter = +"
