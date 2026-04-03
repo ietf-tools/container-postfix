@@ -157,7 +157,7 @@ spec:
           - --postfix.showq_network
           - tcp
           - --postfix.showq_port
-          - 10020
+          - "10020"
         ports:
           - name: metrics
             containerPort: 9154
