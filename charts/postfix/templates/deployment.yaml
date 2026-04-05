@@ -170,10 +170,16 @@ spec:
           image: ghcr.io/hsn723/postfix_exporter
           imagePullPolicy: IfNotPresent
           args:
+          - --postfix.smtpd_service_label submission/smtpd
+          - --postfix.smtpd_service_label smtpd
           - --postfix.showq_path
           - /var/spool/postfix/public/showq
           - --postfix.logfile_path
           - /var/log/postfix/current
+          ports:
+            - name: metrics
+              containerPort: 9154
+              protocol: TCP
           volumeMounts:
             - name: {{ include "postfix.fullname" . }}-queue
               mountPath: /var/spool/postfix

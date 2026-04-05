@@ -136,7 +136,8 @@ mx_tls:
 postfix:
   deploymentType: statefulSet
   hostname: mx.mydomain.com
-  postscreenEnabled: true
+  postscreenEnabled: false
+  podMonitorEnabled: true
   sasl_pgsql:
     enabled: false
     existingSecretName: sasl-pgsql
