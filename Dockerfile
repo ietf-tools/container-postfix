@@ -11,11 +11,11 @@ ENV MY_NETWORKS="172.17.0.0/16 127.0.0.0/8"
 ENV MY_DESTINATION="localhost.localdomain, localhost"
 ENV ROOT_ALIAS="admin@example.com"
 ENV LOG_TO_STDOUT=0
-ENV DINIT_JSON_STDOUT=1
+ENV DINIT_JSON_STDOUT=0
 
 COPY ./libs /tmp/libs
 
-RUN apk add --no-cache postfix postfix-pgsql postfix-pcre cyrus-sasl python3
+RUN apk add --no-cache postfix postfix-pgsql postfix-pcre cyrus-sasl
 
 RUN postconf -e mydestination="localhost.localdomain, localhost" && \
   postconf -e smtpd_banner='$myhostname ESMTP $mail_name' && \
@@ -33,7 +33,6 @@ RUN postconf -e mydestination="localhost.localdomain, localhost" && \
 
 ENV POSTFIX_PATH="/usr/libexec/postfix/master"
 
-COPY ./usr/local/bin/logger.py /usr/local/bin/logger.py
 COPY ./etc/postfix/sasl/smtpd.conf /etc/postfix/sasl
 COPY ./etc/postfix/aliases /etc/postfix/aliases
 COPY ./etc/service/postfix /etc/service/postfix
