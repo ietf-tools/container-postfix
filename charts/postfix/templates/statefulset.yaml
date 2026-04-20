@@ -167,9 +167,11 @@ spec:
             mountPath: /var/spool/postfix
           - name: logs
             mountPath: /var/log/postfix
+      initContainers:
       - name: filebeat
         image: elastic/filebeat:9.3.1
         imagePullPolicy: IfNotPresent
+        restartPolicy: Always
         args:
           - -c
           - /etc/filebeat.yml
