@@ -167,9 +167,39 @@ spec:
             mountPath: /var/spool/postfix
           - name: logs
             mountPath: /var/log/postfix
-
-
+      - name: filebeat
+        image: elastic/filebeat:9.3.1
+        imagePullPolicy: IfNotPresent
+        args:
+          - -c
+          - /etc/filebeat.yml
+          - -e
+        volumeMounts:
+          - name: logs
+            mountPath: /var/log/postfix
+          - name: filebeat-config
+            mountPath: /etc/filebeat.yml
+            subPath: filebeat.yml
+            readOnly: true
+          {{- if .Values.filebeat.tlsCA }}
+          - name: filebeat-ca
+            mountPath: /etc/filebeat/ca.pem
+            subPath: ca.pem
+            readOnly: true
+          {{- end }}
       volumes:
+        {{- if .Values.filebeat.enabled }}
+        - name: filebeat-config
+          configMap:
+            name: filebeat-config
+            defaultMode: 0444
+        {{- if .Values.filebeat.tlsCA }}
+        - name: filebeat-ca
+          configMap:
+            name: filebeat-ca
+            defaultMode: 0444
+        {{- end }}
+        {{- end }}
         {{- if not .Values.persistence.queue.enabled }}
         - name: queue
           emptyDir: {}
