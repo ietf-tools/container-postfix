@@ -395,3 +395,13 @@ metrics:
     # documentation](https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.Endpoint) for
     # formatting details.
     metricRelabelings: []
+
+filebeat:
+  enabled: false
+  tlsCA: false
+  logstashHost: 127.0.0.1
+  logstashPort: 5044
+  logstashTags:
+    - postfix
+  filePaths:
+    - /var/log/postfix/current
