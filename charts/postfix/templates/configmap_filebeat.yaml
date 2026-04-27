@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: filebeat-config
+  name: {{ include "postfix.fullname" . }}-filebeat-config
 data:
   filebeat.yml: |
     filebeat.inputs:
@@ -33,7 +33,7 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: filebeat-ca
+  name: {{ include "postfix.fullname" . }}-filebeat-ca
 data:
   ca.pem: |
     {{- .Values.filebeat.tlsCA | nindent 4 }}
