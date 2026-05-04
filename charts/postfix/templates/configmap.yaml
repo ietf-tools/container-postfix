@@ -79,7 +79,13 @@ data:
 
     {{- if .Values.postfix.tlsEnabled }}
     # TLS config
-    postconf "smtpd_tls_security_level = may"
+    postconf -e "tls_preempt_cipherlist = yes"
+    postconf -e "smtpd_tls_protocols = {{ .Values.postfix.tlsProtocols }}"
+    postconf -e "smtpd_tls_ciphers = high"
+    postconf -e "smtpd_tls_mandatory_ciphers = high"
+    postconf -e "tls_high_cipherlist = {{ .Values.postfix.tlsCipherList }}"
+
+    postconf "smtpd_tls_security_level = {{ .Values.postfix.tlsSecurityLevel }}"
     postconf "smtpd_tls_cert_file = /etc/tls/tls.crt"
     postconf "smtpd_tls_key_file = /etc/tls/tls.key"
     {{- end }}
