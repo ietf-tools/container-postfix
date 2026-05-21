@@ -401,6 +401,7 @@ metrics:
     metricRelabelings: []
 
 filebeat:
+  filebeatVersion: 9.3.3
   enabled: false
   tlsCA: false
   loggingHostname: my-postfix
