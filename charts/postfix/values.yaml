@@ -137,7 +137,7 @@ postfix:
   deploymentType: statefulSet
   hostname: mx.mydomain.com
   postscreenEnabled: false
-  podMonitorEnabled: true
+  podMonitorEnabled: false
   sasl_pgsql:
     enabled: false
     existingSecretName: sasl-pgsql
@@ -382,7 +382,7 @@ affinity: {}
 metrics:
   serviceMonitor:
     # -- Setting that allows the creation of a Prometheus ServiceMonitor resource for postfix components.
-    enabled: true
+    enabled: false
     # -- Additional labels for the Prometheus ServiceMonitor resource.
     additionalLabels: {}
     # -- Annotations for the Prometheus ServiceMonitor resource.
