@@ -31,6 +31,7 @@ data:
     {{- end }}
   {{- end }}
   run.initialization: |
+    postconf "inet_protocols = all"
     # enable showq over tcp for the exporter
     postconf -M '127.0.0.1:10020/inet=127.0.0.1:10020 inet n - - - - showq'
     postconf "myhostname = {{ .Values.postfix.hostname }}"
@@ -158,6 +159,68 @@ data:
     {{- end }}
     {{- if .Values.postfix.smtpd_recipient_overshoot_limit }}
     postconf "smtpd_recipient_overshoot_limit = {{ .Values.postfix.smtpd_recipient_overshoot_limit }}"
+    {{- end }}
+
+    # Generic postfix settings
+    {{- if .Values.postfix.smtp_helo_timeout }}
+    postconf "smtp_helo_timeout = {{ .Values.postfix.smtp_helo_timeout }}"
+    {{- end }}
+    {{- if .Values.postfix.smtp_mail_timeout }}
+    postconf "smtp_mail_timeout = {{ .Values.postfix.smtp_mail_timeout }}"
+    {{- end }}
+    {{- if .Values.postfix.smtp_quit_timeout }}
+    postconf "smtp_quit_timeout = {{ .Values.postfix.smtp_quit_timeout }}"
+    {{- end }}
+    {{- if .Values.postfix.smtp_rcpt_timeout }}
+    postconf "smtp_rcpt_timeout = {{ .Values.postfix.smtp_rcpt_timeout }}"
+    {{- end }}
+    {{- if .Values.postfix.broken_sasl_auth_clients }}
+    postconf "broken_sasl_auth_clients = {{ .Values.postfix.broken_sasl_auth_clients }}"
+    {{- end }}
+    {{- if .Values.postfix.smtpd_sasl_local_domain }}
+    postconf "smtpd_sasl_local_domain = {{ .Values.postfix.smtpd_sasl_local_domain | quote }}"
+    {{- end }}
+    {{- if .Values.postfix.smtpd_discard_ehlo_keywords }}
+    postconf "smtpd_discard_ehlo_keywords = {{ .Values.postfix.smtpd_discard_ehlo_keywords }}"
+    {{- end }}
+    {{- if .Values.postfix.expand_owner_alias }}
+    postconf "expand_owner_alias = {{ .Values.postfix.expand_owner_alias }}"
+    {{- end }}
+    {{- if .Values.postfix.disable_vrfy_command }}
+    postconf "disable_vrfy_command = {{ .Values.postfix.disable_vrfy_command }}"
+    {{- end }}
+    {{- if .Values.postfix.strict_rfc821_envelopes }}
+    postconf "strict_rfc821_envelopes = {{ .Values.postfix.strict_rfc821_envelopes }}"
+    {{- end }}
+    {{- if .Values.postfix.smtpd_tls_loglevel }}
+    postconf "smtpd_tls_loglevel = {{ .Values.postfix.smtpd_tls_loglevel }}"
+    {{- end }}
+    {{- if .Values.postfix.smtpd_tls_received_header }}
+    postconf "smtpd_tls_received_header = {{ .Values.postfix.smtpd_tls_received_header }}"
+    {{- end }}
+    {{- if .Values.postfix.default_destination_concurrency_limit }}
+    postconf "default_destination_concurrency_limit = {{ .Values.postfix.default_destination_concurrency_limit }}"
+    {{- end }}
+    {{- if .Values.postfix.local_destination_concurrency_limit }}
+    postconf "local_destination_concurrency_limit = {{ .Values.postfix.local_destination_concurrency_limit }}"
+    {{- end }}
+    {{- if .Values.postfix.smtp_destination_concurrency_limit }}
+    postconf "smtp_destination_concurrency_limit = {{ .Values.postfix.smtp_destination_concurrency_limit }}"
+    {{- end }}
+    {{- if .Values.postfix.maximal_queue_lifetime }}
+    postconf "maximal_queue_lifetime = {{ .Values.postfix.maximal_queue_lifetime }}"
+    {{- end }}
+    {{- if .Values.postfix.bounce_queue_lifetime }}
+    postconf "bounce_queue_lifetime = {{ .Values.postfix.bounce_queue_lifetime }}"
+    {{- end }}
+    {{- if .Values.postfix.postscreen_access_list }}
+    postconf "postscreen_access_list = {{ .Values.postfix.postscreen_access_list }}"
+    {{- end }}
+
+    # Proxy settings
+    {{- if .Values.postfix.proxy_protocol_inbound }}
+    postconf "postscreen_upstream_proxy_protocol = haproxy"
+    postconf "postscreen_upstream_proxy_timeout = 15s"
     {{- end }}
 
     {{ if .Values.postfix.extra_config }}

@@ -147,11 +147,31 @@ postfix:
     encrypted: true
     existingSecretName: smtp-password
     existingSecretKey: smtp-password
-  smtpd_client_message_rate_limit: 0
-  smtpd_client_recipient_rate_limit: 0
-  message_size_limit: 0
-  smtpd_recipient_limit: 0
-  smtpd_recipient_overshoot_limit: 0
+  smtpd_client_message_rate_limit: 10
+  smtpd_client_recipient_rate_limit: 10
+  message_size_limit: 67108864
+  smtpd_recipient_limit: 20
+  smtpd_recipient_overshoot_limit: 10
+  smtp_helo_timeout: 180s
+  smtp_mail_timeout: 180s
+  smtp_quit_timeout: 180s
+  smtp_rcpt_timeout: 180s
+  broken_sasl_auth_clients: "yes"
+  smtpd_sasl_local_domain: $myhostname
+  smtpd_discard_ehlo_keywords: "silent-discard, dsn"
+  expand_owner_alias: "yes"
+  disable_vrfy_command: "yes"
+  strict_rfc821_envelopes: "yes"
+  smtpd_tls_loglevel: 1
+  smtpd_tls_received_header: "yes"
+  default_destination_concurrency_limit: 20
+  local_destination_concurrency_limit: 5
+  smtp_destination_concurrency_limit: 5
+  maximal_queue_lifetime: 1d
+  bounce_queue_lifetime: 1d
+  postscreen_access_list: permit_mynetworks
+
+
 
   mynetworks:
     - 127.0.0.0/8
