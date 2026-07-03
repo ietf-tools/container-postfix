@@ -216,6 +216,13 @@ data:
     postconf "postscreen_access_list = {{ .Values.postfix.postscreen_access_list }}"
     {{- end }}
 
+    # Proxy settings
+    # Proxy settings
+    {{- if .Values.postfix.proxy_protocol_inbound }}
+    postconf "postscreen_upstream_proxy_protocol = haproxy"
+    postconf "postscreen_upstream_proxy_timeout = 15s"
+    {{- end }}
+
     {{ if .Values.postfix.extra_config }}
     {{- range .Values.postfix.extra_config }}
     {{ . }}
