@@ -161,7 +161,7 @@ postfix:
   smtpd_discard_ehlo_keywords: "silent-discard, dsn"
   expand_owner_alias: "yes"
   disable_vrfy_command: "yes"
-  strict_rfc821_envelope: "yes"
+  strict_rfc821_envelopes: "yes"
   smtpd_tls_loglevel: 1
   smtpd_tls_received_header: "yes"
   default_destination_concurrency_limit: 20
