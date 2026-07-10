@@ -341,6 +341,9 @@ service:
   annotations: {}
   # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
   type: ClusterIP
+  ipFamilyPolicy: PreferDualStack
+  ipFamilies: [IPv4, IPv6]
+  externalTrafficPolicy: Local
 
 probes:
   liveness:
