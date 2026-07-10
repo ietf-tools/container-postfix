@@ -13,7 +13,10 @@ spec:
   {{- if eq .Values.service.type "LoadBalancer" }}
   externalTrafficPolicy: {{ .Values.service.externalTrafficPolicy }}
   ipFamilyPolicy: {{ .Values.service.ipFamilyPolicy }}
-  ipFamilies: {{ .Values.service.ipFamilies }}
+  {{- with .Values.service.ipFamilies }}
+  ipFamilies:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   {{- end }}
   ports:
     - port: 25
