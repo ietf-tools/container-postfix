@@ -11,7 +11,9 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   {{- if eq .Values.service.type "LoadBalancer" }}
-  externalTrafficPolicy: Local
+  externalTrafficPolicy: {{ .Values.service.externalTrafficPolicy }}
+  ipFamilyPolicy: {{ .Values.service.ipFamilyPolicy }}
+  ipFamilies: {{ .Values.service.ipFamilies }}
   {{- end }}
   ports:
     - port: 25
