@@ -45,7 +45,7 @@ data:
     postmap lmdb:/etc/postfix/{{ .Values.postfix.smtp_client_auth.existingSecretKey }}
     postconf "smtp_sasl_password_maps = lmdb:/etc/postfix/{{ .Values.postfix.smtp_client_auth.existingSecretKey }}"
       {{- if .Values.postfix.smtp_client_auth.encrypted }}
-    postconf "smtp_tls_security_level = encrypt"
+    postconf "smtp_tls_security_level = may"
       {{- end }}
 
     {{- end }}
