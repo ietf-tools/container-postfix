@@ -222,6 +222,49 @@ data:
     postconf "postscreen_upstream_proxy_timeout = 15s"
     {{- end }}
 
+    {{- with .Values.postfix.dkim2Split }}
+    {{- if .enabled }}
+    {{- $milter := required "postfix.dkim2Split.milter is required" .milter }}
+    {{- $outbound := .outbound }}
+    {{- if not $outbound }}
+    {{- if not $.Values.postfix.relay_host }}
+    {{- fail "postfix.dkim2Split needs postfix.relay_host or postfix.dkim2Split.outbound" }}
+    {{- end }}
+    {{- $outbound = printf "smtp:%s" $.Values.postfix.relay_host }}
+    {{- end }}
+
+    # DKIM2 split then sign: off-site mail goes round again, one recipient
+    # per transaction, through a loopback listener that only signs
+    postconf -M 'dkim2-split/unix=dkim2-split unix - - n - - smtp'
+    postconf -P 'dkim2-split/unix/syslog_name=postfix/dkim2-split' \
+                'dkim2-split/unix/smtp_generic_maps=' \
+                'dkim2-split/unix/smtp_tls_security_level=none' \
+                'dkim2-split/unix/smtp_sasl_auth_enable=no' \
+                'dkim2-split/unix/smtp_send_xforward_command=yes'
+    postconf -M '{{ .listen }}/inet={{ .listen }} inet n - n - - smtpd'
+    postconf -P '{{ .listen }}/inet/syslog_name=postfix/dkim2-sign' \
+                '{{ .listen }}/inet/milter_macro_daemon_name={{ .daemonName }}' \
+                '{{ .listen }}/inet/smtpd_milters={{ $milter }}' \
+                '{{ .listen }}/inet/non_smtpd_milters=' \
+                '{{ .listen }}/inet/receive_override_options=no_address_mappings,no_header_body_checks' \
+                '{{ .listen }}/inet/content_filter={{ $outbound }}' \
+                '{{ .listen }}/inet/mynetworks=127.0.0.0/8' \
+                '{{ .listen }}/inet/smtpd_authorized_xforward_hosts=127.0.0.0/8' \
+                '{{ .listen }}/inet/smtpd_client_restrictions=' \
+                '{{ .listen }}/inet/smtpd_helo_restrictions=' \
+                '{{ .listen }}/inet/smtpd_sender_restrictions=' \
+                '{{ .listen }}/inet/smtpd_data_restrictions=' \
+                '{{ .listen }}/inet/smtpd_relay_restrictions=permit_mynetworks,reject' \
+                '{{ .listen }}/inet/smtpd_recipient_restrictions=permit_mynetworks,reject' \
+                '{{ .listen }}/inet/smtpd_upstream_proxy_protocol=' \
+                '{{ .listen }}/inet/smtpd_tls_security_level=none' \
+                '{{ .listen }}/inet/smtpd_sasl_auth_enable=no'
+    postconf "default_transport = dkim2-split:[{{ (splitList ":" .listen) | initial | join ":" }}]:{{ (splitList ":" .listen) | last }}"
+    postconf "dkim2-split_destination_recipient_limit = 1"
+    postconf "dkim2-split_destination_concurrency_limit = {{ .concurrencyLimit }}"
+    {{- end }}
+    {{- end }}
+
     {{ if .Values.postfix.extra_config }}
     {{- range .Values.postfix.extra_config }}
     {{ . }}

@@ -247,6 +247,26 @@ postfix:
     - inet:[rspamd]:11332
   non_smtpd_milters:
     - inet:[rspamd]:11332
+  # DKIM2 split then sign (container-rewriter, DKIM2.md). A DKIM2
+  # signature names every envelope recipient, and milters see recipients
+  # before aliases are expanded, so off-site mail is signed in a second
+  # pass: default_transport sends each copy, one recipient at a time, to a
+  # loopback listener whose only milter is the rewriter, and that listener
+  # hands it straight to the outbound route by content_filter. Mail with
+  # its own transport (transport_maps, relay_domains) is not split.
+  # Turn DKIM2_SIGN_DAEMON on in the rewriter first, and off after this
+  dkim2Split:
+    enabled: false
+    # the rewriter, as written in smtpd_milters, e.g. inet:[rewriter]:8800
+    milter: ""
+    # milter_macro_daemon_name on the listener: must equal the rewriter's
+    # DKIM2_SIGN_DAEMON
+    daemonName: DKIM2-SIGN
+    listen: 127.0.0.1:10040
+    # copies in flight from the first pass to the second
+    concurrencyLimit: 10
+    # where signed copies go (transport:nexthop); empty is smtp:<relay_host>
+    outbound: ""
 
 statefulSet:
   replicas: 2
